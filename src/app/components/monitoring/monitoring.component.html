@@ -110,7 +110,13 @@
       <!-- AI Status Card -->
       <div class="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-mono text-zinc-400 uppercase tracking-widest">AI CORE STATUS</h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-xs font-mono text-zinc-400 uppercase tracking-widest">AI CORE STATUS</h3>
+            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800/50 border border-zinc-700/50">
+              <div [class]="'w-1.5 h-1.5 rounded-full ' + (aiStatus() === 'Idle' ? 'bg-zinc-500' : 'bg-emerald-500 animate-pulse')"></div>
+              <span class="text-[9px] font-mono text-zinc-400 uppercase tracking-tighter">{{ aiStatus() }}</span>
+            </div>
+          </div>
           <div class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-mono">OPTIMIZED</div>
         </div>
         

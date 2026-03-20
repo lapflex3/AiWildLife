@@ -28,6 +28,7 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
 
   isMonitoring = signal<boolean>(false);
   isAnalyzing = signal<boolean>(false);
+  aiStatus = signal<'Idle' | 'Analyzing Frame' | 'Processing...'>('Idle');
   error = signal<string | null>(null);
   lastDetection = signal<any>(null);
   config = signal<CameraConfig | null>(null);
@@ -125,12 +126,19 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
   }
 
   async analyzeFrame() {
-    if (this.isAnalyzing() || !this.quotaService.canUseAI() || !this.isMonitoring()) return;
+    if (this.isAnalyzing() || !this.quotaService.canUseAI() || !this.isMonitoring()) {
+      this.aiStatus.set('Idle');
+      return;
+    }
 
     this.isAnalyzing.set(true);
+    this.aiStatus.set('Processing...');
     try {
       const frame = this.captureFrame();
-      if (!frame) return;
+      if (!frame) {
+        this.aiStatus.set('Idle');
+        return;
+      }
 
       // Increment usage
       const canProceed = await this.quotaService.incrementUsage();
@@ -138,9 +146,11 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
         this.error.set('Daily AI usage limit reached.');
         this.isMonitoring.set(false);
         this.stopCamera();
+        this.aiStatus.set('Idle');
         return;
       }
 
+      this.aiStatus.set('Analyzing Frame');
       const currentTime = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false });
       const result = await this.geminiService.analyzeCameraFrame(frame, currentTime);
       this.lastDetection.set(result);
@@ -190,6 +200,7 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
       }
     } finally {
       this.isAnalyzing.set(false);
+      this.aiStatus.set('Idle');
     }
   }
 
