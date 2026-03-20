@@ -49,6 +49,7 @@
         "lowPowerMode": { "type": "boolean", "description": "Whether low power mode is enabled." },
         "samplingRate": { "type": "number", "description": "Interval between AI checks in seconds." },
         "active": { "type": "boolean", "description": "Whether monitoring is currently active." },
+        "modelId": { "type": "string", "description": "The AI model version used for analysis." },
         "notificationsEnabled": { "type": "boolean", "description": "Whether browser push notifications are enabled." },
         "webhookUrl": { "type": "string", "description": "Optional URL for external app integration (e.g., Slack, Discord)." },
         "calibration": {
@@ -63,6 +64,31 @@
         }
       },
       "required": ["userId", "lowPowerMode", "samplingRate", "active"]
+    },
+    "AlertConfig": {
+      "title": "AlertConfig",
+      "description": "Configuration for receiving critical alerts via email and WhatsApp.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User ID." },
+        "email": { "type": "string", "description": "Email address for alerts." },
+        "whatsapp": { "type": "string", "description": "WhatsApp number for alerts." },
+        "enabled": { "type": "boolean", "description": "Whether these alerts are enabled." }
+      },
+      "required": ["userId", "email", "whatsapp"]
+    },
+    "RegisteredDevice": {
+      "title": "RegisteredDevice",
+      "description": "Represents a mobile device registered to receive alerts.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique device ID." },
+        "userId": { "type": "string", "description": "User ID who owns this device." },
+        "deviceName": { "type": "string", "description": "Name of the registered device." },
+        "registeredAt": { "type": "number", "description": "Unix timestamp of registration." },
+        "token": { "type": "string", "description": "FCM or push token for the device." }
+      },
+      "required": ["id", "userId", "deviceName", "registeredAt"]
     }
   },
   "firestore": {
@@ -81,6 +107,14 @@
     "/configs/{userId}": {
       "schema": "CameraConfig",
       "description": "User camera configurations."
+    },
+    "/alertConfigs/{userId}": {
+      "schema": "AlertConfig",
+      "description": "User alert configurations."
+    },
+    "/devices/{deviceId}": {
+      "schema": "RegisteredDevice",
+      "description": "Collection of registered mobile devices."
     }
   }
 }

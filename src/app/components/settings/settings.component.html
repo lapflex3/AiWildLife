@@ -21,18 +21,34 @@
           </button>
         </div>
 
-        <div class="space-y-3 p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl">
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-mono text-zinc-100 uppercase">SAMPLING RATE</p>
-            <span class="text-xs font-mono text-emerald-500">{{ (config$ | async)?.samplingRate }}s</span>
+          <div class="space-y-3 p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-mono text-zinc-100 uppercase">SAMPLING RATE</p>
+              <span class="text-xs font-mono text-emerald-500">{{ (config$ | async)?.samplingRate }}s</span>
+            </div>
+            <input type="range" min="1" max="60" step="1" 
+              [ngModel]="(config$ | async)?.samplingRate" 
+              (ngModelChange)="updateSamplingRate($event)"
+              class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+            <p class="text-[10px] text-zinc-500 font-mono uppercase text-right">INTERVAL BETWEEN AI CHECKS</p>
           </div>
-          <input type="range" min="1" max="60" step="1" 
-            [ngModel]="(config$ | async)?.samplingRate" 
-            (ngModelChange)="updateSamplingRate($event)"
-            class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
-          <p class="text-[10px] text-zinc-500 font-mono uppercase text-right">INTERVAL BETWEEN AI CHECKS</p>
+
+          <div class="space-y-3 p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-mono text-zinc-100 uppercase">AI MODEL VERSION</p>
+              <mat-icon class="text-zinc-600 text-sm">psychology</mat-icon>
+            </div>
+            <select 
+              [ngModel]="(config$ | async)?.modelId"
+              (change)="updateModelId($event)"
+              class="w-full bg-black border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-300 focus:border-emerald-500 outline-none transition-all">
+              <option value="gemini-3-flash-preview">GEMINI 3 FLASH (FAST)</option>
+              <option value="gemini-3.1-pro-preview">GEMINI 3.1 PRO (ADVANCED)</option>
+              <option value="gemini-3-turbo-preview">GEMINI 3 TURBO (BALANCED)</option>
+            </select>
+            <p class="text-[10px] text-zinc-500 font-mono uppercase text-right">SELECT MODEL FOR ANALYSIS</p>
+          </div>
         </div>
-      </div>
 
       <div class="space-y-4">
         <h2 class="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">DETECTION SENSITIVITY</h2>
@@ -132,6 +148,81 @@
               (change)="updateWebhookUrl($event)"
               placeholder="https://hooks.slack.com/services/..."
               class="w-full bg-black border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-300 focus:border-emerald-500 outline-none transition-all">
+          </div>
+
+          <!-- Critical Alert Config -->
+          <div class="p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+              <div class="space-y-1">
+                <p class="text-xs font-mono text-zinc-100 uppercase">CRITICAL ALERT RECIPIENTS</p>
+                <p class="text-[8px] text-zinc-500 font-mono uppercase">EMAIL & WHATSAPP NOTIFICATIONS</p>
+              </div>
+              <mat-icon class="text-rose-400 text-sm">notification_important</mat-icon>
+            </div>
+            
+            <form [formGroup]="alertForm" (ngSubmit)="saveAlertConfig()" class="space-y-3">
+              <div class="space-y-1">
+                <label class="text-[8px] text-zinc-500 font-mono uppercase">EMAIL ADDRESS</label>
+                <input type="email" formControlName="email"
+                  class="w-full bg-black border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-300 focus:border-emerald-500 outline-none transition-all">
+              </div>
+              <div class="space-y-1">
+                <label class="text-[8px] text-zinc-500 font-mono uppercase">WHATSAPP NUMBER</label>
+                <input type="text" formControlName="whatsapp"
+                  class="w-full bg-black border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-300 focus:border-emerald-500 outline-none transition-all">
+              </div>
+              <div class="flex items-center justify-between pt-2">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" formControlName="enabled" id="alertEnabled" class="accent-emerald-500">
+                  <label for="alertEnabled" class="text-[10px] text-zinc-400 font-mono uppercase">ENABLE ALERTS</label>
+                </div>
+                <button type="submit" [disabled]="alertForm.invalid"
+                  class="px-4 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-mono uppercase hover:bg-emerald-500/20 transition-all disabled:opacity-50">
+                  SAVE CONFIG
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Device Registration -->
+          <div class="p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+              <div class="space-y-1">
+                <p class="text-xs font-mono text-zinc-100 uppercase">DEVICE REGISTRATION</p>
+                <p class="text-[8px] text-zinc-500 font-mono uppercase">CONNECT MOBILE DEVICES VIA QR</p>
+              </div>
+              <mat-icon class="text-zinc-500 text-sm">qr_code_2</mat-icon>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <p class="text-[8px] text-zinc-500 font-mono uppercase">MY CONNECTION QR</p>
+                @if (connectionQR()) {
+                  <div class="p-2 bg-white rounded-lg inline-block">
+                    <img [src]="connectionQR()" alt="Connection QR" class="w-24 h-24">
+                  </div>
+                } @else {
+                  <div class="w-24 h-24 bg-zinc-800 rounded-lg animate-pulse"></div>
+                }
+                <p class="text-[7px] text-zinc-600 font-mono uppercase leading-tight">SCAN THIS ON YOUR MOBILE APP TO CONNECT</p>
+              </div>
+
+              <div class="space-y-2">
+                <p class="text-[8px] text-zinc-500 font-mono uppercase">REGISTER NEW DEVICE</p>
+                <button (click)="isScanning.set(!isScanning())"
+                  class="w-full py-4 bg-zinc-800 border border-zinc-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-emerald-500/50 transition-all">
+                  <mat-icon class="text-zinc-400">{{ isScanning() ? 'close' : 'qr_code_scanner' }}</mat-icon>
+                  <span class="text-[8px] font-mono text-zinc-400 uppercase">{{ isScanning() ? 'STOP SCAN' : 'START SCANNER' }}</span>
+                </button>
+              </div>
+            </div>
+
+            @if (isScanning()) {
+              <div class="relative aspect-square bg-black rounded-xl overflow-hidden border border-zinc-800">
+                <ngx-scanner-qrcode #action="scanner" [autoStart]="true" (event)="onScan($event)"></ngx-scanner-qrcode>
+                <div class="absolute inset-0 border-2 border-emerald-500/30 animate-pulse pointer-events-none"></div>
+              </div>
+            }
           </div>
         </div>
       </div>

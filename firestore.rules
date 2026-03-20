@@ -39,6 +39,7 @@ service cloud.firestore {
     //   - lowPowerMode: bool (required) - Whether low power mode is enabled.
     //   - samplingRate: number (required) - Interval between AI checks in seconds.
     //   - active: bool (required) - Whether monitoring is currently active.
+    //   - modelId: string (required) - The AI model version used for analysis.
     // ===============================================================
 
     // ===============================================================
@@ -69,6 +70,14 @@ service cloud.firestore {
       return isAuthenticated() && (
         (request.auth.token.email == "laptoprazif@gmail.com" && request.auth.token.email_verified == true)
       );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
     }
 
     // ===============================================================
@@ -103,11 +112,12 @@ service cloud.firestore {
     }
 
     function isValidConfig(data) {
-      return hasRequiredFields(['userId', 'lowPowerMode', 'samplingRate', 'active']) &&
+      return hasRequiredFields(['userId', 'lowPowerMode', 'samplingRate', 'active', 'modelId']) &&
              data.userId is string && data.userId == request.auth.uid &&
              data.lowPowerMode is bool &&
              data.samplingRate is number && data.samplingRate >= 0.1 && data.samplingRate <= 3600 &&
              data.active is bool &&
+             data.modelId is string && data.modelId.size() < 100 &&
              (!('notificationsEnabled' in data) || data.notificationsEnabled is bool) &&
              (!('webhookUrl' in data) || (data.webhookUrl is string && data.webhookUrl.size() < 500)) &&
              (!('calibration' in data) || (
@@ -117,6 +127,23 @@ service cloud.firestore {
                data.calibration.roiWidth is number && data.calibration.roiWidth >= 0 && data.calibration.roiWidth <= 100 &&
                data.calibration.roiHeight is number && data.calibration.roiHeight >= 0 && data.calibration.roiHeight <= 100
              ));
+    }
+
+    function isValidAlertConfig(data) {
+      return hasRequiredFields(['userId', 'email', 'whatsapp']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.email is string && isValidEmail(data.email) &&
+             data.whatsapp is string && data.whatsapp.size() >= 10 && data.whatsapp.size() <= 20 &&
+             (!('enabled' in data) || data.enabled is bool);
+    }
+
+    function isValidDevice(data) {
+      return hasRequiredFields(['id', 'userId', 'deviceName', 'registeredAt']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.deviceName is string && data.deviceName.size() > 0 && data.deviceName.size() < 100 &&
+             data.registeredAt is number &&
+             (!('token' in data) || (data.token is string && data.token.size() < 500));
     }
 
     // ===============================================================
@@ -148,6 +175,20 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidConfig(request.resource.data);
       allow update: if isOwner(userId) && isValidConfig(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /alertConfigs/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidAlertConfig(request.resource.data);
+      allow update: if isOwner(userId) && isValidAlertConfig(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /devices/{deviceId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidDevice(request.resource.data);
+      allow update: if isDocOwner() && isValidDevice(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner() || isAdmin();
     }
 
     // Default deny

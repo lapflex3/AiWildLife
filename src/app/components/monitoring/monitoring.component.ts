@@ -152,7 +152,8 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
 
       this.aiStatus.set('Analyzing Frame');
       const currentTime = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false });
-      const result = await this.geminiService.analyzeCameraFrame(frame, currentTime);
+      const currentModelId = this.config()?.modelId || 'gemini-3-flash-preview';
+      const result = await this.geminiService.analyzeCameraFrame(frame, currentTime, currentModelId);
       this.lastDetection.set(result);
       this.error.set(null); // Clear any previous analysis errors
 
