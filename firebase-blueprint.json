@@ -50,6 +50,7 @@
         "samplingRate": { "type": "number", "description": "Interval between AI checks in seconds." },
         "active": { "type": "boolean", "description": "Whether monitoring is currently active." },
         "modelId": { "type": "string", "description": "The AI model version used for analysis." },
+        "offlineMode": { "type": "boolean", "description": "Whether to use local offline AI (TensorFlow.js) instead of Cloud Gemini." },
         "notificationsEnabled": { "type": "boolean", "description": "Whether browser push notifications are enabled." },
         "webhookUrl": { "type": "string", "description": "Optional URL for external app integration (e.g., Slack, Discord)." },
         "calibration": {

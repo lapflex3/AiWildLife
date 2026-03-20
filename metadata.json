@@ -1,7 +1,9 @@
 {
-  "name": "AI Wildlife Sentinel",
-  "description": "Live AI camera monitoring for human and wildlife detection (elephants, tigers, lions, etc.). Features low-power mode, usage tracking, and real-time alerts.",
+  "name": "Sentinel AI Farm Security",
+  "description": "AI-powered farm security system with human and animal detection.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone",
+    "geolocation"
   ]
 }

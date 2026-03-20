@@ -40,6 +40,7 @@ service cloud.firestore {
     //   - samplingRate: number (required) - Interval between AI checks in seconds.
     //   - active: bool (required) - Whether monitoring is currently active.
     //   - modelId: string (required) - The AI model version used for analysis.
+    //   - offlineMode: bool (required) - Whether to use local offline AI.
     // ===============================================================
 
     // ===============================================================
@@ -112,12 +113,13 @@ service cloud.firestore {
     }
 
     function isValidConfig(data) {
-      return hasRequiredFields(['userId', 'lowPowerMode', 'samplingRate', 'active', 'modelId']) &&
+      return hasRequiredFields(['userId', 'lowPowerMode', 'samplingRate', 'active', 'modelId', 'offlineMode']) &&
              data.userId is string && data.userId == request.auth.uid &&
              data.lowPowerMode is bool &&
              data.samplingRate is number && data.samplingRate >= 0.1 && data.samplingRate <= 3600 &&
              data.active is bool &&
              data.modelId is string && data.modelId.size() < 100 &&
+             data.offlineMode is bool &&
              (!('notificationsEnabled' in data) || data.notificationsEnabled is bool) &&
              (!('webhookUrl' in data) || (data.webhookUrl is string && data.webhookUrl.size() < 500)) &&
              (!('calibration' in data) || (

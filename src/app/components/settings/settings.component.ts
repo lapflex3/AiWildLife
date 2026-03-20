@@ -135,6 +135,13 @@ export class SettingsComponent {
     }
   }
 
+  async toggleOfflineMode() {
+    const config = await firstValueFrom(this.config$);
+    if (config) {
+      await this.configService.updateConfig({ offlineMode: !config.offlineMode });
+    }
+  }
+
   async updateSamplingRate(rate: number) {
     await this.configService.updateConfig({ samplingRate: rate });
   }

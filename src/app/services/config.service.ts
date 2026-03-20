@@ -10,6 +10,7 @@ export interface CameraConfig {
   samplingRate: number;
   active: boolean;
   modelId: string;
+  offlineMode: boolean;
   notificationsEnabled?: boolean;
   webhookUrl?: string;
   calibration?: {
@@ -75,7 +76,8 @@ export class ConfigService {
             lowPowerMode: true,
             samplingRate: 10, // Check every 10 seconds by default
             active: false,
-            modelId: 'gemini-3-flash-preview'
+            modelId: 'gemini-3-flash-preview',
+            offlineMode: false
           };
           setDoc(configRef, defaultConfig);
         }

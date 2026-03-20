@@ -7,7 +7,26 @@
     "dev": "ng serve",
     "build": "ng build",
     "lint": "ng lint",
-    "preview": "ng serve --configuration=production"
+    "preview": "ng serve --configuration=production",
+    "electron:build": "ng build && electron-builder build --win --portable",
+    "electron:run": "ng build && electron electron/main.js"
+  },
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.sentinel.ai",
+    "productName": "Sentinel AI Farm Security",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/browser/**/*",
+      "electron/main.js"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    }
   },
   "dependencies": {
     "@angular/build": "^21.1.0",
@@ -20,6 +39,8 @@
     "@angular/material": "^21.2.3",
     "@angular/platform-browser": "^21.1.0",
     "@google/genai": "^1.42.0",
+    "@tensorflow-models/coco-ssd": "^2.2.3",
+    "@tensorflow/tfjs": "^4.22.0",
     "angular-eslint": "^21.3.1",
     "firebase": "^12.11.0",
     "ngx-scanner-qrcode": "^1.8.1",
@@ -29,6 +50,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

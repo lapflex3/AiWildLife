@@ -1,6 +1,7 @@
 import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GeminiService } from '../../../gemini.service';
+import { OfflineAiService } from '../../services/offline-ai.service';
 import { QuotaService } from '../../services/quota.service';
 import { ConfigService, CameraConfig } from '../../services/config.service';
 import { DetectionService } from '../../services/detection.service';
@@ -21,6 +22,7 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas') canvasElement!: ElementRef<HTMLCanvasElement>;
 
   private geminiService = inject(GeminiService);
+  private offlineAiService = inject(OfflineAiService);
   public quotaService = inject(QuotaService);
   private configService = inject(ConfigService);
   private detectionService = inject(DetectionService);
@@ -152,8 +154,18 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
 
       this.aiStatus.set('Analyzing Frame');
       const currentTime = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false });
-      const currentModelId = this.config()?.modelId || 'gemini-3-flash-preview';
-      const result = await this.geminiService.analyzeCameraFrame(frame, currentTime, currentModelId);
+      const currentConfig = this.config();
+      const currentModelId = currentConfig?.modelId || 'gemini-3-flash-preview';
+      
+      let result: any;
+      if (currentConfig?.offlineMode) {
+        // Use local TensorFlow.js model
+        result = await this.offlineAiService.analyzeFrame(this.canvasElement.nativeElement);
+      } else {
+        // Use Cloud Gemini API
+        result = await this.geminiService.analyzeCameraFrame(frame, currentTime, currentModelId);
+      }
+      
       this.lastDetection.set(result);
       this.error.set(null); // Clear any previous analysis errors
 
