@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "Detection": {
+      "title": "Detection",
+      "description": "Represents a single AI detection event from the camera.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the detection." },
+        "timestamp": { "type": "number", "description": "Unix timestamp of the detection." },
+        "type": { "type": "string", "enum": ["human", "animal", "unknown"], "description": "Type of object detected." },
+        "label": { "type": "string", "description": "Specific label (e.g., 'tiger', 'elephant', 'human')." },
+        "confidence": { "type": "number", "description": "AI confidence score (0-1)." },
+        "imageUrl": { "type": "string", "description": "Optional base64 or URL of the frame." },
+        "uid": { "type": "string", "description": "User ID who owns this camera/detection." }
+      },
+      "required": ["id", "timestamp", "type", "uid"]
+    },
+    "Alert": {
+      "title": "Alert",
+      "description": "Represents a security alert triggered by a detection.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the alert." },
+        "timestamp": { "type": "number", "description": "Unix timestamp of the alert." },
+        "message": { "type": "string", "description": "Alert message." },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"], "description": "Severity level." },
+        "uid": { "type": "string", "description": "User ID who owns this alert." }
+      },
+      "required": ["id", "timestamp", "message", "severity", "uid"]
+    },
+    "UsageQuota": {
+      "title": "UsageQuota",
+      "description": "Tracks AI API usage for a user to prevent over-usage.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User ID." },
+        "dailyLimit": { "type": "number", "description": "Maximum allowed AI calls per day." },
+        "currentUsage": { "type": "number", "description": "Number of AI calls made today." },
+        "lastReset": { "type": "number", "description": "Timestamp of the last usage reset." }
+      },
+      "required": ["userId", "dailyLimit", "currentUsage", "lastReset"]
+    },
+    "CameraConfig": {
+      "title": "CameraConfig",
+      "description": "User-specific camera and monitoring settings.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User ID." },
+        "lowPowerMode": { "type": "boolean", "description": "Whether low power mode is enabled." },
+        "samplingRate": { "type": "number", "description": "Interval between AI checks in seconds." },
+        "active": { "type": "boolean", "description": "Whether monitoring is currently active." }
+      },
+      "required": ["userId", "lowPowerMode", "samplingRate", "active"]
+    }
+  },
+  "firestore": {
+    "/detections/{detectionId}": {
+      "schema": "Detection",
+      "description": "Collection of all AI detection events."
+    },
+    "/alerts/{alertId}": {
+      "schema": "Alert",
+      "description": "Collection of security alerts."
+    },
+    "/quotas/{userId}": {
+      "schema": "UsageQuota",
+      "description": "User usage quotas."
+    },
+    "/configs/{userId}": {
+      "schema": "CameraConfig",
+      "description": "User camera configurations."
+    }
+  }
+}

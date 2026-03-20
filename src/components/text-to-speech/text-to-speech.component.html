@@ -1,0 +1,41 @@
+
+<div class="max-w-4xl mx-auto">
+  <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold mb-4 text-indigo-400">Text to Speech</h2>
+    <p class="text-gray-400 mb-6">Enter any text below and use your browser's built-in engine to convert it to speech. Note: This feature does not use a Gemini model.</p>
+    
+    <div class="space-y-4">
+      <div>
+        <label for="tts-text" class="block text-sm font-medium text-gray-300">Text to Speak</label>
+        <textarea id="tts-text" name="tts-text" rows="8"
+          class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"
+          [value]="textToSpeak()" (input)="updateText($event)"></textarea>
+      </div>
+
+      <div class="flex space-x-4">
+         <button (click)="speak()" [disabled]="isSpeaking() || !textToSpeak()"
+          class="w-full sm:w-auto inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+            <span class="material-icons-outlined mr-2">play_arrow</span>
+            Speak
+        </button>
+        <button (click)="cancel()" [disabled]="!isSpeaking()"
+          class="w-full sm:w-auto inline-flex justify-center py-2 px-6 border border-gray-600 shadow-sm text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span class="material-icons-outlined mr-2">stop</span>
+          Stop
+        </button>
+      </div>
+
+      @if (isSpeaking()) {
+        <div class="flex items-center text-sm text-green-400 pt-4">
+            <div class="flex items-center space-x-2">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span>Speaking...</span>
+            </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

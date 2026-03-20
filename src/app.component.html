@@ -1,0 +1,82 @@
+
+<div class="flex h-screen bg-black text-zinc-100 font-mono">
+  @if (!user()) {
+    <!-- Login Screen -->
+    <div class="flex-1 flex flex-col items-center justify-center p-8 bg-[radial-gradient(circle_at_50%_30%,#1a1a1a_0%,transparent_60%)]">
+      <div class="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 mb-8 animate-pulse">
+        <mat-icon class="text-emerald-400 text-4xl">security</mat-icon>
+      </div>
+      <h1 class="text-4xl font-bold tracking-tighter mb-2">AI WILDLIFE SENTINEL</h1>
+      <p class="text-zinc-500 text-xs uppercase tracking-[0.3em] mb-12">Secure Monitoring System v2.5</p>
+      
+      <button (click)="login()" 
+        class="px-8 py-3 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center gap-3">
+        <mat-icon>login</mat-icon>
+        ESTABLISH SECURE CONNECTION
+      </button>
+      
+      <p class="mt-12 text-[10px] text-zinc-600 uppercase tracking-widest">Authorized Personnel Only</p>
+    </div>
+  } @else {
+    <!-- Sidebar -->
+    <aside class="w-64 bg-zinc-950 flex flex-col p-6 border-r border-zinc-900">
+      <div class="flex items-center gap-3 mb-12">
+        <div class="w-8 h-8 rounded bg-emerald-500 flex items-center justify-center">
+          <mat-icon class="text-black text-sm">security</mat-icon>
+        </div>
+        <h1 class="text-sm font-bold tracking-widest uppercase">SENTINEL</h1>
+      </div>
+
+      <nav class="flex-grow">
+        <ul class="space-y-2">
+          @for(item of navItems; track item.id) {
+            <li>
+              <button
+                (click)="selectFeature(item.id)"
+                [class]="'w-full text-left px-4 py-3 rounded-xl flex items-center transition-all duration-300 group ' + 
+                (activeFeature() === item.id ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'text-zinc-500 hover:text-zinc-300')"
+              >
+                <mat-icon class="mr-3 text-sm">{{ item.icon }}</mat-icon>
+                <span class="text-[10px] uppercase tracking-widest font-bold">{{ item.name }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <div class="mt-auto pt-6 border-t border-zinc-900 space-y-4">
+        <div class="flex items-center gap-3">
+          <img [src]="user()?.photoURL" class="w-8 h-8 rounded-full border border-zinc-800">
+          <div class="overflow-hidden">
+            <p class="text-[10px] text-zinc-300 truncate">{{ user()?.displayName }}</p>
+            <p class="text-[8px] text-zinc-600 uppercase tracking-tighter">OPERATOR ACTIVE</p>
+          </div>
+        </div>
+        <button (click)="logout()" class="w-full py-2 text-[10px] text-zinc-600 hover:text-rose-400 transition-colors uppercase tracking-widest flex items-center gap-2">
+          <mat-icon class="text-xs">logout</mat-icon>
+          DISCONNECT
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 bg-black overflow-y-auto relative">
+      <!-- Background Grid -->
+      <div class="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
+      
+      <div class="relative z-10">
+        @switch (activeFeature()) {
+          @case ('monitoring') {
+            <app-monitoring />
+          }
+          @case ('dashboard') {
+            <app-dashboard />
+          }
+          @case ('settings') {
+            <app-settings />
+          }
+        }
+      </div>
+    </main>
+  }
+</div>

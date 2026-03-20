@@ -1,0 +1,117 @@
+<div class="max-w-7xl mx-auto p-6 space-y-8">
+  <!-- Top Stats Row -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+      <p class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">TOTAL DETECTIONS</p>
+      <div class="flex items-end gap-2">
+        <span class="text-3xl font-mono text-zinc-100">{{ (detections$ | async)?.length || 0 }}</span>
+        <span class="text-xs text-emerald-500 font-mono mb-1">+12%</span>
+      </div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+      <p class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">ACTIVE ALERTS</p>
+      <div class="flex items-end gap-2">
+        <span class="text-3xl font-mono text-rose-500">{{ (alerts$ | async)?.length || 0 }}</span>
+        <span class="text-xs text-rose-500/50 font-mono mb-1">CRITICAL</span>
+      </div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+      <p class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">AI QUOTA USAGE</p>
+      <div class="flex items-end gap-2">
+        <span class="text-3xl font-mono text-zinc-100">{{ (quota$ | async)?.currentUsage || 0 }}</span>
+        <span class="text-xs text-zinc-500 font-mono mb-1">/ {{ (quota$ | async)?.dailyLimit || 100 }}</span>
+      </div>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl">
+      <p class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">SYSTEM UPTIME</p>
+      <div class="flex items-end gap-2">
+        <span class="text-3xl font-mono text-zinc-100">99.8%</span>
+        <span class="text-xs text-emerald-500 font-mono mb-1">STABLE</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Detection History (Data Grid) -->
+    <div class="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+      <div class="p-6 border-b border-zinc-800 flex items-center justify-between">
+        <h2 class="text-sm font-mono text-zinc-100 uppercase tracking-widest">DETECTION LOG</h2>
+        <span class="text-[10px] font-mono text-zinc-500">LAST 20 EVENTS</span>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left font-mono text-xs">
+          <thead>
+            <tr class="border-b border-zinc-800 bg-zinc-950/50">
+              <th class="p-4 text-zinc-500 uppercase font-normal">TIMESTAMP</th>
+              <th class="p-4 text-zinc-500 uppercase font-normal">TYPE</th>
+              <th class="p-4 text-zinc-500 uppercase font-normal">LABEL</th>
+              <th class="p-4 text-zinc-500 uppercase font-normal">CONFIDENCE</th>
+              <th class="p-4 text-zinc-500 uppercase font-normal">ACTION</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800">
+            @for (det of detections$ | async; track det.id) {
+              <tr class="hover:bg-zinc-800/30 transition-colors group">
+                <td class="p-4 text-zinc-400">{{ formatDate(det.timestamp) }}</td>
+                <td class="p-4">
+                  <span [class]="'px-2 py-0.5 rounded ' + (det.type === 'animal' ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400')">
+                    {{ det.type | uppercase }}
+                  </span>
+                </td>
+                <td class="p-4 text-zinc-100">{{ det.label || 'N/A' }}</td>
+                <td class="p-4">
+                  <div class="flex items-center gap-2">
+                    <div class="w-12 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                      <div class="h-full bg-emerald-500" [style.width]="(det.confidence * 100) + '%'"></div>
+                    </div>
+                    <span class="text-zinc-500">{{ (det.confidence * 100).toFixed(0) }}%</span>
+                  </div>
+                </td>
+                <td class="p-4">
+                  <button class="text-zinc-500 hover:text-zinc-100 transition-colors">
+                    <mat-icon class="text-sm">visibility</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="p-12 text-center text-zinc-600 italic">No detections recorded.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Alert Feed -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col">
+      <div class="p-6 border-b border-zinc-800">
+        <h2 class="text-sm font-mono text-zinc-100 uppercase tracking-widest">CRITICAL ALERTS</h2>
+      </div>
+      
+      <div class="p-4 flex-grow overflow-y-auto space-y-4">
+        @for (alert of alerts$ | async; track alert.id) {
+          <div [class]="'p-4 rounded-xl border transition-all ' + 
+            (alert.severity === 'critical' ? 'bg-rose-500/10 border-rose-500/20' : 
+             alert.severity === 'high' ? 'bg-orange-500/10 border-orange-500/20' : 'bg-zinc-800/50 border-zinc-800')">
+            <div class="flex items-center justify-between mb-2">
+              <span [class]="'text-[10px] font-mono uppercase font-bold ' + 
+                (alert.severity === 'critical' ? 'text-rose-400' : 
+                 alert.severity === 'high' ? 'text-orange-400' : 'text-zinc-400')">
+                {{ alert.severity }}
+              </span>
+              <span class="text-[10px] font-mono text-zinc-600">{{ formatDate(alert.timestamp) }}</span>
+            </div>
+            <p class="text-xs text-zinc-300 font-mono leading-relaxed">{{ alert.message }}</p>
+          </div>
+        } @empty {
+          <div class="flex flex-col items-center justify-center h-full text-zinc-600 space-y-2">
+            <mat-icon class="text-3xl">check_circle_outline</mat-icon>
+            <p class="text-xs font-mono uppercase">All systems clear</p>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

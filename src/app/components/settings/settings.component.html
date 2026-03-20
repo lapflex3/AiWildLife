@@ -1,0 +1,115 @@
+<div class="max-w-4xl mx-auto p-8 space-y-12">
+  <div class="space-y-2">
+    <h1 class="text-3xl font-mono text-zinc-100 uppercase tracking-widest">SYSTEM CONFIGURATION</h1>
+    <p class="text-xs text-zinc-500 font-mono uppercase tracking-widest">ADJUST MONITORING PARAMETERS AND POWER MODES</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+    <!-- Power & Performance -->
+    <div class="space-y-8">
+      <div class="space-y-4">
+        <h2 class="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">POWER MANAGEMENT</h2>
+        
+        <div class="flex items-center justify-between p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+          <div class="space-y-1">
+            <p class="text-sm font-mono text-zinc-100 uppercase">LOW POWER MODE</p>
+            <p class="text-[10px] text-zinc-500 font-mono">REDUCES CPU USAGE FOR SOLAR POWERED SYSTEMS</p>
+          </div>
+          <button (click)="toggleLowPowerMode()"
+            [class]="'w-12 h-6 rounded-full transition-all relative ' + ((config$ | async)?.lowPowerMode ? 'bg-emerald-500' : 'bg-zinc-700')">
+            <div [class]="'absolute top-1 w-4 h-4 rounded-full bg-white transition-all ' + ((config$ | async)?.lowPowerMode ? 'left-7' : 'left-1')"></div>
+          </button>
+        </div>
+
+        <div class="space-y-3 p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-mono text-zinc-100 uppercase">SAMPLING RATE</p>
+            <span class="text-xs font-mono text-emerald-500">{{ (config$ | async)?.samplingRate }}s</span>
+          </div>
+          <input type="range" min="1" max="60" step="1" 
+            [ngModel]="(config$ | async)?.samplingRate" 
+            (ngModelChange)="updateSamplingRate($event)"
+            class="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+          <p class="text-[10px] text-zinc-500 font-mono uppercase text-right">INTERVAL BETWEEN AI CHECKS</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <h2 class="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">DETECTION SENSITIVITY</h2>
+        <div class="grid grid-cols-3 gap-3">
+          <button class="p-3 bg-zinc-900/40 border border-zinc-800 rounded-xl text-center hover:border-emerald-500/50 transition-all">
+            <p class="text-[10px] font-mono text-zinc-500 uppercase">LOW</p>
+          </button>
+          <button class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
+            <p class="text-[10px] font-mono text-emerald-400 uppercase">MEDIUM</p>
+          </button>
+          <button class="p-3 bg-zinc-900/40 border border-zinc-800 rounded-xl text-center hover:border-emerald-500/50 transition-all">
+            <p class="text-[10px] font-mono text-zinc-500 uppercase">HIGH</p>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Quota & Limits -->
+    <div class="space-y-8">
+      <div class="space-y-4">
+        <h2 class="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">AI USAGE QUOTA</h2>
+        
+        <div class="p-6 bg-zinc-900/40 border border-zinc-800 rounded-2xl space-y-6">
+          <div class="flex items-center justify-between">
+            <div class="space-y-1">
+              <p class="text-2xl font-mono text-zinc-100">{{ (quota$ | async)?.currentUsage }} / {{ (quota$ | async)?.dailyLimit }}</p>
+              <p class="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">DAILY AI CALLS REMAINING</p>
+            </div>
+            <div class="w-16 h-16 rounded-full border-4 border-zinc-800 flex items-center justify-center">
+              <span class="text-xs font-mono text-zinc-400">{{ (100 - ((quota$ | async)?.currentUsage || 0) / ((quota$ | async)?.dailyLimit || 100) * 100).toFixed(0) }}%</span>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-[10px] font-mono text-zinc-500 uppercase">
+              <span>USAGE TREND</span>
+              <span>STABLE</span>
+            </div>
+            <div class="flex items-end gap-1 h-12">
+              <div class="flex-grow bg-zinc-800/50 h-4 rounded-sm"></div>
+              <div class="flex-grow bg-zinc-800/50 h-6 rounded-sm"></div>
+              <div class="flex-grow bg-zinc-800/50 h-3 rounded-sm"></div>
+              <div class="flex-grow bg-zinc-800/50 h-8 rounded-sm"></div>
+              <div class="flex-grow bg-emerald-500/50 h-10 rounded-sm"></div>
+              <div class="flex-grow bg-emerald-500 h-12 rounded-sm"></div>
+              <div class="flex-grow bg-zinc-800/50 h-2 rounded-sm"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-rose-500/5 border border-rose-500/10 rounded-xl flex gap-4">
+          <mat-icon class="text-rose-400 text-sm">info_outline</mat-icon>
+          <p class="text-[10px] text-rose-400 font-mono leading-relaxed uppercase tracking-wider">
+            WARNING: EXCEEDING DAILY QUOTA WILL SUSPEND MONITORING UNTIL NEXT RESET.
+          </p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <h2 class="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">NOTIFICATION TARGETS</h2>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-3 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+            <div class="flex items-center gap-3">
+              <mat-icon class="text-zinc-500 text-sm">smartphone</mat-icon>
+              <span class="text-xs font-mono text-zinc-300 uppercase tracking-wider">MOBILE APP</span>
+            </div>
+            <span class="text-[10px] font-mono text-emerald-500 uppercase">CONNECTED</span>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+            <div class="flex items-center gap-3">
+              <mat-icon class="text-zinc-500 text-sm">mail_outline</mat-icon>
+              <span class="text-xs font-mono text-zinc-300 uppercase tracking-wider">EMAIL ALERTS</span>
+            </div>
+            <span class="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">DISABLED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

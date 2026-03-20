@@ -1,0 +1,149 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: detections
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required) - Unique ID for the detection.
+    //   - timestamp: number (required) - Unix timestamp of the detection.
+    //   - type: string (required, enum: ['human', 'animal', 'unknown']) - Type of object detected.
+    //   - label: string (optional) - Specific label (e.g., 'tiger', 'elephant', 'human').
+    //   - confidence: number (optional) - AI confidence score (0-1).
+    //   - imageUrl: string (optional) - Optional base64 or URL of the frame.
+    //   - uid: string (required) - User ID who owns this camera/detection.
+    //
+    // Collection: alerts
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required) - Unique ID for the alert.
+    //   - timestamp: number (required) - Unix timestamp of the alert.
+    //   - message: string (required) - Alert message.
+    //   - severity: string (required, enum: ['low', 'medium', 'high', 'critical']) - Severity level.
+    //   - uid: string (required) - User ID who owns this alert.
+    //
+    // Collection: quotas
+    // Document ID: userId
+    // Fields:
+    //   - userId: string (required) - User ID.
+    //   - dailyLimit: number (required) - Maximum allowed AI calls per day.
+    //   - currentUsage: number (required) - Number of AI calls made today.
+    //   - lastReset: number (required) - Timestamp of the last usage reset.
+    //
+    // Collection: configs
+    // Document ID: userId
+    // Fields:
+    //   - userId: string (required) - User ID.
+    //   - lowPowerMode: bool (required) - Whether low power mode is enabled.
+    //   - samplingRate: number (required) - Interval between AI checks in seconds.
+    //   - active: bool (required) - Whether monitoring is currently active.
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "laptoprazif@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidDetection(data) {
+      return hasRequiredFields(['id', 'timestamp', 'type', 'uid']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() < 100 &&
+             data.timestamp is number &&
+             data.type in ['human', 'animal', 'unknown'] &&
+             data.uid is string && data.uid == request.auth.uid &&
+             (!('label' in data) || (data.label is string && data.label.size() < 100)) &&
+             (!('confidence' in data) || (data.confidence is number && data.confidence >= 0 && data.confidence <= 1)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 2000000)); // Limit base64 size
+    }
+
+    function isValidAlert(data) {
+      return hasRequiredFields(['id', 'timestamp', 'message', 'severity', 'uid']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.timestamp is number &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 500 &&
+             data.severity in ['low', 'medium', 'high', 'critical'] &&
+             data.uid is string && data.uid == request.auth.uid;
+    }
+
+    function isValidQuota(data) {
+      return hasRequiredFields(['userId', 'dailyLimit', 'currentUsage', 'lastReset']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.dailyLimit is number && data.dailyLimit > 0 &&
+             data.currentUsage is number && data.currentUsage >= 0 &&
+             data.lastReset is number;
+    }
+
+    function isValidConfig(data) {
+      return hasRequiredFields(['userId', 'lowPowerMode', 'samplingRate', 'active']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.lowPowerMode is bool &&
+             data.samplingRate is number && data.samplingRate >= 0.1 && data.samplingRate <= 3600 &&
+             data.active is bool;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /detections/{detectionId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidDetection(request.resource.data);
+      allow update: if false; // Detections should be immutable
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /alerts/{alertId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidAlert(request.resource.data);
+      allow update: if isDocOwner() && isValidAlert(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /quotas/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidQuota(request.resource.data);
+      allow update: if isOwner(userId) && isValidQuota(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /configs/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidConfig(request.resource.data);
+      allow update: if isOwner(userId) && isValidConfig(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
