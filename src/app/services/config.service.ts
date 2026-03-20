@@ -9,6 +9,14 @@ export interface CameraConfig {
   lowPowerMode: boolean;
   samplingRate: number;
   active: boolean;
+  notificationsEnabled?: boolean;
+  webhookUrl?: string;
+  calibration?: {
+    roiX: number;
+    roiY: number;
+    roiWidth: number;
+    roiHeight: number;
+  };
 }
 
 @Injectable({

@@ -2,8 +2,9 @@ import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, signal, inj
 import { CommonModule } from '@angular/common';
 import { GeminiService } from '../../../gemini.service';
 import { QuotaService } from '../../services/quota.service';
-import { ConfigService } from '../../services/config.service';
+import { ConfigService, CameraConfig } from '../../services/config.service';
 import { DetectionService } from '../../services/detection.service';
+import { NotificationService } from '../../services/notification.service';
 import { auth } from '../../../firebase';
 import { LoaderComponent } from '../shared/loader.component';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,17 +24,20 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
   public quotaService = inject(QuotaService);
   private configService = inject(ConfigService);
   private detectionService = inject(DetectionService);
+  private notificationService = inject(NotificationService);
 
   isMonitoring = signal<boolean>(false);
   isAnalyzing = signal<boolean>(false);
   error = signal<string | null>(null);
   lastDetection = signal<any>(null);
+  config = signal<CameraConfig | null>(null);
   
   private stream: MediaStream | null = null;
   private analysisInterval: any;
 
   ngAfterViewInit() {
     this.configService.config$.subscribe(config => {
+      this.config.set(config);
       if (config) {
         this.isMonitoring.set(config.active);
         if (config.active) {
@@ -55,20 +59,42 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
 
   async startCamera() {
     try {
+      this.error.set(null);
       this.stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'environment', // Use back camera if available
+          facingMode: 'environment',
           width: { ideal: 1280 },
           height: { ideal: 720 }
         } 
       });
       this.videoElement.nativeElement.srcObject = this.stream;
       this.startAnalysis();
-      this.error.set(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accessing camera:', err);
-      this.error.set('Camera access denied or not available.');
+      let message = 'Camera access denied or not available.';
+      
+      if (err.name === 'NotAllowedError') {
+        message = 'Camera permission was denied. Please allow access in your browser settings.';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        message = 'No camera device found. Please ensure your camera is connected.';
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        message = 'Camera is already in use by another application.';
+      } else if (err.name === 'OverconstrainedError') {
+        message = 'Camera does not support the requested resolution.';
+      }
+      
+      this.error.set(message);
       this.isMonitoring.set(false);
+    }
+  }
+
+  async retry() {
+    this.error.set(null);
+    const config = this.configService.getConfig();
+    if (config?.active) {
+      await this.startCamera();
+    } else {
+      await this.toggleMonitoring();
     }
   }
 
@@ -115,8 +141,10 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
         return;
       }
 
-      const result = await this.geminiService.analyzeCameraFrame(frame);
+      const currentTime = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const result = await this.geminiService.analyzeCameraFrame(frame, currentTime);
       this.lastDetection.set(result);
+      this.error.set(null); // Clear any previous analysis errors
 
       if (result.detected) {
         const user = auth.currentUser;
@@ -131,22 +159,35 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
             uid: user.uid
           });
 
-          // Trigger alert for high confidence or dangerous animals
-          if (result.confidence > 0.7 || result.type === 'animal') {
-            await this.detectionService.addAlert({
-              timestamp: Date.now(),
-              message: result.message || `Detected ${result.label || result.type}`,
-              severity: result.type === 'animal' ? 'high' : 'medium',
-              uid: user.uid
-            });
-            
-            // Text to speech alert
-            this.geminiService.generateSpeech(result.message || `Warning: ${result.label || result.type} detected.`);
-          }
+            // Trigger alert for high confidence, dangerous animals, or high severity behavior
+            if (result.confidence > 0.7 || result.type === 'animal' || result.severity === 'high') {
+              const severity = result.severity || (result.type === 'animal' ? 'high' : 'medium');
+              const message = result.message || `Detected ${result.label || result.type}`;
+              
+              await this.detectionService.addAlert({
+                timestamp: Date.now(),
+                message,
+                severity,
+                uid: user.uid
+              });
+              
+              // Real-time notifications (Browser & Webhook)
+              this.notificationService.sendAlert(message, severity, frame);
+              
+              // Text to speech alert
+              this.geminiService.generateSpeech(message);
+            }
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error during frame analysis:', err);
+      if (err.message?.includes('Quota exceeded')) {
+        this.error.set('AI quota exceeded. Monitoring paused.');
+        this.isMonitoring.set(false);
+        this.stopCamera();
+      } else {
+        this.error.set('AI analysis failed. Checking connection...');
+      }
     } finally {
       this.isAnalyzing.set(false);
     }
@@ -155,13 +196,26 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
   private captureFrame(): string | null {
     const video = this.videoElement.nativeElement;
     const canvas = this.canvasElement.nativeElement;
+    const config = this.configService.getConfig();
     
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        if (config?.calibration) {
+          const { roiX, roiY, roiWidth, roiHeight } = config.calibration;
+          const sx = (roiX / 100) * video.videoWidth;
+          const sy = (roiY / 100) * video.videoHeight;
+          const sw = (roiWidth / 100) * video.videoWidth;
+          const sh = (roiHeight / 100) * video.videoHeight;
+          
+          canvas.width = sw;
+          canvas.height = sh;
+          ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+        } else {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
         // Compress image to save quota and bandwidth
         return canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
       }

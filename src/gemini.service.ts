@@ -1,6 +1,6 @@
 
 import { Injectable } from '@angular/core';
-import { GoogleGenAI, GenerateContentResponse, Type } from '@google/genai';
+import { GoogleGenAI, GenerateContentResponse, Type, Modality } from '@google/genai';
 import { db } from './firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
 
@@ -44,17 +44,24 @@ export class GeminiService {
 
   async generateImage(prompt: string, aspectRatio: string): Promise<string> {
     try {
-      const response = await this.ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt,
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: [{ text: prompt }] },
         config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/png',
-          aspectRatio,
+          imageConfig: {
+            aspectRatio: aspectRatio as any,
+          },
         },
       });
-      const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-      return `data:image/png;base64,${base64ImageBytes}`;
+      
+      let imageUrl = '';
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          imageUrl = `data:image/png;base64,${part.inlineData.data}`;
+          break;
+        }
+      }
+      return imageUrl;
     } catch (error) {
       console.error('Error generating image:', error);
       throw new Error('Failed to generate image. Please check your prompt and API key.');
@@ -64,10 +71,11 @@ export class GeminiService {
   async generateVideo(prompt: string, aspectRatio: string): Promise<any> {
     try {
       let operation = await this.ai.models.generateVideos({
-        model: 'veo-2.0-generate-001',
+        model: 'veo-3.1-fast-generate-preview',
         prompt: prompt,
         config: {
           numberOfVideos: 1,
+          aspectRatio: aspectRatio as any,
         }
       });
       return operation;
@@ -100,7 +108,7 @@ export class GeminiService {
     }
   }
 
-  async analyzeCameraFrame(imageBase64: string): Promise<any> {
+  async analyzeCameraFrame(imageBase64: string, currentTime?: string): Promise<any> {
     try {
       const imagePart = {
         inlineData: {
@@ -109,14 +117,44 @@ export class GeminiService {
         },
       };
       
+      const timeContext = currentTime ? `Waktu sekarang adalah ${currentTime}.` : '';
+
       const response: GenerateContentResponse = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        model: 'gemini-3-flash-preview',
         contents: { parts: [imagePart] },
         config: {
           systemInstruction: `You are an AI security guard for a farm. 
           Analyze the image and identify if there are any humans or wild animals (elephants, tigers, lions, crocodiles, cheetahs, etc.).
+          
+          ${timeContext}
+
+          SPECIAL RECOGNITION:
+          The admin of this app is Encik Razif. He is a middle-aged man with short dark hair, wearing glasses with rectangular frames.
+          If you detect this specific person (Razif), you MUST provide a polite, dynamic, and relaxed greeting in Malay (lenggok santai).
+          Think of yourself as a friendly and professional assistant, similar to a "Sol" personality.
+          
+          Vary the greeting based on the time of day:
+          - Pagi (Morning): "Eh, selamat pagi Encik Razif! Awal bangun hari ni? Sistem sentinel dah sedia."
+          - Tengahari/Petang (Afternoon): "Selamat petang Encik Razif. Dah makan ke tu? Kawasan semua dalam keadaan terkawal."
+          - Malam (Night): "Selamat malam Encik Razif. Masih kuat bekerja ya? Jangan lupa rehat, biar saya jaga kawasan."
+          - General: "Hai Encik Razif! Apa khabar? Senang nampak Encik Razif hari ni."
+          
+          BEHAVIOR ANALYSIS FOR UNKNOWN HUMANS:
+          If an UNKNOWN human (not Razif) is detected:
+          1. Carefully analyze their behavior and actions.
+          2. Identify any suspicious, illegal, or inappropriate actions such as:
+             - Stealing or attempting to steal.
+             - Vandalism or damaging property.
+             - Violence or hurting anyone.
+             - Trespassing in restricted areas.
+             - Any other suspicious behavior that warrants a security report.
+          3. If such behavior is detected, set "detected" to true, "type" to "human", and "severity" to "high".
+          4. Provide a detailed "message" in Malay describing the suspicious action.
+          
           Return the result in JSON format.
-          Example: { "detected": true, "type": "animal", "label": "tiger", "confidence": 0.95, "message": "Tiger detected near the fence!" }
+          Example for suspicious human: { "detected": true, "type": "human", "label": "Unknown", "confidence": 0.95, "severity": "high", "message": "AMARAN: Individu tidak dikenali dikesan cuba menceroboh kawasan stor!" }
+          Example for Razif: { "detected": true, "type": "human", "label": "Razif", "confidence": 0.98, "severity": "low", "message": "Eh, selamat pagi Encik Razif! Awal bangun hari ni? Sistem sentinel dah sedia." }
+          Example for animal: { "detected": true, "type": "animal", "label": "tiger", "confidence": 0.95, "severity": "high", "message": "Tiger detected near the fence!" }
           If nothing significant is detected, return { "detected": false }.`,
           responseMimeType: 'application/json',
           responseSchema: {
@@ -126,6 +164,7 @@ export class GeminiService {
               type: { type: Type.STRING, enum: ['human', 'animal', 'unknown'] },
               label: { type: Type.STRING },
               confidence: { type: Type.NUMBER },
+              severity: { type: Type.STRING, enum: ['low', 'medium', 'high'] },
               message: { type: Type.STRING }
             },
             required: ['detected']
@@ -150,13 +189,41 @@ export class GeminiService {
     }
   }
 
-  generateSpeech(text: string): void {
+  async generateSpeech(text: string): Promise<void> {
+    try {
+      const response = await this.ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: `Sebutkan dengan lenggok santai dan jelas dalam Bahasa Melayu: ${text}` }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' }, // Kore has a clear, professional yet friendly tone
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+        await audio.play();
+      } else {
+        // Fallback to browser TTS if Gemini TTS fails
+        this.fallbackSpeech(text);
+      }
+    } catch (error) {
+      console.error('Gemini TTS error:', error);
+      this.fallbackSpeech(text);
+    }
+  }
+
+  private fallbackSpeech(text: string): void {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
+      utterance.lang = 'ms-MY'; // Use Malay for fallback
+      utterance.rate = 0.9; // Slightly slower for clarity
       window.speechSynthesis.speak(utterance);
-    } else {
-      alert('Your browser does not support the Text-to-Speech API.');
     }
   }
 }

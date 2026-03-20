@@ -107,7 +107,16 @@ service cloud.firestore {
              data.userId is string && data.userId == request.auth.uid &&
              data.lowPowerMode is bool &&
              data.samplingRate is number && data.samplingRate >= 0.1 && data.samplingRate <= 3600 &&
-             data.active is bool;
+             data.active is bool &&
+             (!('notificationsEnabled' in data) || data.notificationsEnabled is bool) &&
+             (!('webhookUrl' in data) || (data.webhookUrl is string && data.webhookUrl.size() < 500)) &&
+             (!('calibration' in data) || (
+               data.calibration is map &&
+               data.calibration.roiX is number && data.calibration.roiX >= 0 && data.calibration.roiX <= 100 &&
+               data.calibration.roiY is number && data.calibration.roiY >= 0 && data.calibration.roiY <= 100 &&
+               data.calibration.roiWidth is number && data.calibration.roiWidth >= 0 && data.calibration.roiWidth <= 100 &&
+               data.calibration.roiHeight is number && data.calibration.roiHeight >= 0 && data.calibration.roiHeight <= 100
+             ));
     }
 
     // ===============================================================

@@ -47,6 +47,18 @@
             <p class="text-[10px] font-mono text-zinc-500 uppercase">HIGH</p>
           </button>
         </div>
+
+        <button (click)="openCalibration.emit()" 
+          class="w-full mt-4 p-4 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between hover:border-emerald-500/50 transition-all group">
+          <div class="flex items-center gap-3">
+            <mat-icon class="text-zinc-500 group-hover:text-emerald-400 transition-colors">aspect_ratio</mat-icon>
+            <div class="text-left">
+              <p class="text-xs font-mono text-zinc-100 uppercase">CAMERA CALIBRATION</p>
+              <p class="text-[8px] text-zinc-500 font-mono uppercase">DEFINE REGION OF INTEREST</p>
+            </div>
+          </div>
+          <mat-icon class="text-zinc-700 group-hover:text-emerald-400 transition-colors">chevron_right</mat-icon>
+        </button>
       </div>
     </div>
 
@@ -92,21 +104,34 @@
       </div>
 
       <div class="space-y-4">
-        <h2 class="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">NOTIFICATION TARGETS</h2>
+        <h2 class="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">ALERTS & INTEGRATIONS</h2>
         <div class="space-y-3">
-          <div class="flex items-center justify-between p-3 bg-zinc-900/40 border border-zinc-800 rounded-xl">
-            <div class="flex items-center gap-3">
-              <mat-icon class="text-zinc-500 text-sm">smartphone</mat-icon>
-              <span class="text-xs font-mono text-zinc-300 uppercase tracking-wider">MOBILE APP</span>
+          <!-- Browser Notifications -->
+          <div class="flex items-center justify-between p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+            <div class="space-y-1">
+              <p class="text-xs font-mono text-zinc-100 uppercase">BROWSER NOTIFICATIONS</p>
+              <p class="text-[8px] text-zinc-500 font-mono uppercase">REAL-TIME DESKTOP ALERTS</p>
             </div>
-            <span class="text-[10px] font-mono text-emerald-500 uppercase">CONNECTED</span>
+            <button (click)="toggleNotifications()" 
+              [class]="'w-12 h-6 rounded-full transition-all relative ' + ((config$ | async)?.notificationsEnabled ? 'bg-emerald-500' : 'bg-zinc-700')">
+              <div [class]="'absolute top-1 w-4 h-4 bg-white rounded-full transition-all ' + ((config$ | async)?.notificationsEnabled ? 'left-7' : 'left-1')"></div>
+            </button>
           </div>
-          <div class="flex items-center justify-between p-3 bg-zinc-900/40 border border-zinc-800 rounded-xl">
-            <div class="flex items-center gap-3">
-              <mat-icon class="text-zinc-500 text-sm">mail_outline</mat-icon>
-              <span class="text-xs font-mono text-zinc-300 uppercase tracking-wider">EMAIL ALERTS</span>
+
+          <!-- Webhook Integration -->
+          <div class="p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="space-y-1">
+                <p class="text-xs font-mono text-zinc-100 uppercase">WEBHOOK INTEGRATION</p>
+                <p class="text-[8px] text-zinc-500 font-mono uppercase">SEND ALERTS TO EXTERNAL APPS</p>
+              </div>
+              <mat-icon class="text-zinc-600 text-sm">link</mat-icon>
             </div>
-            <span class="text-[10px] font-mono text-zinc-600 uppercase tracking-wider">DISABLED</span>
+            <input type="text" 
+              [value]="(config$ | async)?.webhookUrl || ''"
+              (change)="updateWebhookUrl($event)"
+              placeholder="https://hooks.slack.com/services/..."
+              class="w-full bg-black border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-300 focus:border-emerald-500 outline-none transition-all">
           </div>
         </div>
       </div>

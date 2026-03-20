@@ -1,0 +1,101 @@
+<div class="max-w-4xl mx-auto p-8 space-y-8">
+  <div class="flex items-center justify-between">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-mono text-zinc-100 uppercase tracking-widest">CAMERA CALIBRATION</h1>
+      <p class="text-xs text-zinc-500 font-mono uppercase tracking-widest">DEFINE THE REGION OF INTEREST (ROI) FOR ANALYSIS</p>
+    </div>
+    <button (click)="saveCalibration()" 
+      class="px-6 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2">
+      <mat-icon>save</mat-icon>
+      SAVE CALIBRATION
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Calibration View -->
+    <div class="lg:col-span-2 space-y-4">
+      <div class="relative aspect-video bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl">
+        <video #video autoplay playsinline muted class="w-full h-full object-cover"></video>
+        <canvas #canvas 
+          (mousedown)="onMouseDown($event)" 
+          (mousemove)="onMouseMove($event)" 
+          (mouseup)="onMouseUp()"
+          class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+        
+        <!-- Instructions Overlay -->
+        @if (!roi()) {
+          <div class="absolute inset-0 flex items-center justify-center bg-black/60 pointer-events-none">
+            <div class="text-center space-y-4">
+              <mat-icon class="text-emerald-400 text-4xl animate-bounce">mouse</mat-icon>
+              <p class="text-xs font-mono text-zinc-300 uppercase tracking-widest">CLICK AND DRAG TO DEFINE ROI</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="flex items-center justify-between p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-zinc-500 font-mono uppercase">X:</span>
+            <span class="text-xs font-mono text-zinc-300">{{ roi()?.x?.toFixed(1) || '0.0' }}%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-zinc-500 font-mono uppercase">Y:</span>
+            <span class="text-xs font-mono text-zinc-300">{{ roi()?.y?.toFixed(1) || '0.0' }}%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-zinc-500 font-mono uppercase">WIDTH:</span>
+            <span class="text-xs font-mono text-zinc-300">{{ roi()?.w?.toFixed(1) || '0.0' }}%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-zinc-500 font-mono uppercase">HEIGHT:</span>
+            <span class="text-xs font-mono text-zinc-300">{{ roi()?.h?.toFixed(1) || '0.0' }}%</span>
+          </div>
+        </div>
+        <button (click)="resetCalibration()" class="text-xs font-mono text-rose-400 hover:text-rose-300 uppercase tracking-widest flex items-center gap-2">
+          <mat-icon class="text-sm">refresh</mat-icon>
+          RESET
+        </button>
+      </div>
+    </div>
+
+    <!-- Calibration Info -->
+    <div class="space-y-6">
+      <div class="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-6">
+        <h3 class="text-xs font-mono text-zinc-400 uppercase tracking-widest border-b border-zinc-800 pb-2">WHY CALIBRATE?</h3>
+        
+        <div class="space-y-4">
+          <div class="flex gap-3">
+            <mat-icon class="text-emerald-400 text-sm">check_circle</mat-icon>
+            <div class="space-y-1">
+              <p class="text-[10px] font-mono text-zinc-100 uppercase">IMPROVE ACCURACY</p>
+              <p class="text-[10px] text-zinc-500 font-mono leading-relaxed">FOCUS AI ANALYSIS ONLY ON RELEVANT AREAS OF THE CAMERA FEED.</p>
+            </div>
+          </div>
+          
+          <div class="flex gap-3">
+            <mat-icon class="text-emerald-400 text-sm">check_circle</mat-icon>
+            <div class="space-y-1">
+              <p class="text-[10px] font-mono text-zinc-100 uppercase">REDUCE FALSE POSITIVES</p>
+              <p class="text-[10px] text-zinc-500 font-mono leading-relaxed">EXCLUDE AREAS WITH FREQUENT NON-THREAT MOVEMENT (E.G., TREES, PUBLIC ROADS).</p>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <mat-icon class="text-emerald-400 text-sm">check_circle</mat-icon>
+            <div class="space-y-1">
+              <p class="text-[10px] font-mono text-zinc-100 uppercase">SAVE QUOTA</p>
+              <p class="text-[10px] text-zinc-500 font-mono leading-relaxed">SMALLER ROI MEANS MORE FOCUSED ANALYSIS AND POTENTIALLY FEWER UNNECESSARY CALLS.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
+          <p class="text-[10px] text-emerald-400 font-mono leading-relaxed uppercase tracking-wider">
+            TIP: DRAW THE ROI AROUND FENCES OR ENTRY POINTS FOR MAXIMUM SECURITY.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

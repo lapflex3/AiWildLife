@@ -10,10 +10,18 @@
       <p class="text-zinc-500 text-xs uppercase tracking-[0.3em] mb-12">Secure Monitoring System v2.5</p>
       
       <button (click)="login()" 
-        class="px-8 py-3 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center gap-3">
-        <mat-icon>login</mat-icon>
-        ESTABLISH SECURE CONNECTION
+        [disabled]="isLoggingIn()"
+        [class]="'px-8 py-3 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center gap-3 ' + (isLoggingIn() ? 'opacity-50 cursor-not-allowed' : '')">
+        <mat-icon [class.animate-spin]="isLoggingIn()">{{ isLoggingIn() ? 'sync' : 'login' }}</mat-icon>
+        {{ isLoggingIn() ? 'ESTABLISHING CONNECTION...' : 'ESTABLISH SECURE CONNECTION' }}
       </button>
+      
+      @if (loginError()) {
+        <div class="mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+          <mat-icon class="text-rose-400">warning</mat-icon>
+          <p class="text-[10px] text-rose-400 font-mono uppercase tracking-widest">{{ loginError() }}</p>
+        </div>
+      }
       
       <p class="mt-12 text-[10px] text-zinc-600 uppercase tracking-widest">Authorized Personnel Only</p>
     </div>
@@ -73,7 +81,10 @@
             <app-dashboard />
           }
           @case ('settings') {
-            <app-settings />
+            <app-settings (openCalibration)="selectFeature('calibration')" />
+          }
+          @case ('calibration') {
+            <app-calibration />
           }
         }
       </div>

@@ -48,7 +48,19 @@
         "userId": { "type": "string", "description": "User ID." },
         "lowPowerMode": { "type": "boolean", "description": "Whether low power mode is enabled." },
         "samplingRate": { "type": "number", "description": "Interval between AI checks in seconds." },
-        "active": { "type": "boolean", "description": "Whether monitoring is currently active." }
+        "active": { "type": "boolean", "description": "Whether monitoring is currently active." },
+        "notificationsEnabled": { "type": "boolean", "description": "Whether browser push notifications are enabled." },
+        "webhookUrl": { "type": "string", "description": "Optional URL for external app integration (e.g., Slack, Discord)." },
+        "calibration": {
+          "type": "object",
+          "properties": {
+            "roiX": { "type": "number" },
+            "roiY": { "type": "number" },
+            "roiWidth": { "type": "number" },
+            "roiHeight": { "type": "number" }
+          },
+          "description": "Region of Interest for camera calibration."
+        }
       },
       "required": ["userId", "lowPowerMode", "samplingRate", "active"]
     }
