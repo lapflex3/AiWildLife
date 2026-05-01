@@ -90,6 +90,20 @@
         "token": { "type": "string", "description": "FCM or push token for the device." }
       },
       "required": ["id", "userId", "deviceName", "registeredAt"]
+    },
+    "RecognizedFace": {
+      "title": "RecognizedFace",
+      "description": "A face registered for recognition by the AI.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the face record." },
+        "userId": { "type": "string", "description": "User ID who owns this record." },
+        "name": { "type": "string", "description": "Name of the recognized person." },
+        "imageUrl": { "type": "string", "description": "Base64 reference image of the face." },
+        "description": { "type": "string", "description": "Visual description of the person for AI context." },
+        "registeredAt": { "type": "number", "description": "Unix timestamp of registration." }
+      },
+      "required": ["id", "userId", "name", "imageUrl", "registeredAt"]
     }
   },
   "firestore": {
@@ -116,6 +130,10 @@
     "/devices/{deviceId}": {
       "schema": "RegisteredDevice",
       "description": "Collection of registered mobile devices."
+    },
+    "/recognized_faces/{faceId}": {
+      "schema": "RecognizedFace",
+      "description": "Collection of registered faces for recognition."
     }
   }
 }

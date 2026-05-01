@@ -235,6 +235,69 @@
               </div>
             }
           </div>
+
+          <!-- Face Registration -->
+          <div class="p-4 bg-zinc-900/40 border border-zinc-800 rounded-xl space-y-4">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+              <div class="space-y-1">
+                <p class="text-xs font-mono text-zinc-100 uppercase">RECOGNIZED FACES</p>
+                <p class="text-[8px] text-zinc-500 font-mono uppercase">REGISTER FACES FOR AI RECOGNITION</p>
+              </div>
+              <mat-icon class="text-zinc-500 text-sm">face</mat-icon>
+            </div>
+
+            <!-- Face List -->
+            <div class="grid grid-cols-2 gap-3">
+              @for (face of (faces$ | async); track face.id) {
+                <div class="relative group p-2 bg-black border border-zinc-800 rounded-lg flex items-center gap-3">
+                  <img [src]="face.imageUrl" class="w-10 h-10 rounded-full object-cover border border-zinc-700">
+                  <div class="flex-grow min-w-0">
+                    <p class="text-[10px] font-mono text-zinc-100 uppercase truncate">{{ face.name }}</p>
+                    <p class="text-[8px] text-zinc-500 font-mono uppercase truncate">{{ face.description || 'NO DESCRIPTION' }}</p>
+                  </div>
+                  <button (click)="removeFace(face.id)" class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-rose-400">
+                    <mat-icon class="text-xs">delete</mat-icon>
+                  </button>
+                </div>
+              }
+            </div>
+
+            <!-- Registration Form -->
+            <form [formGroup]="faceForm" (ngSubmit)="registerFace()" class="space-y-3 pt-4 border-t border-zinc-800/50">
+              <div class="flex gap-4">
+                <div class="w-24 h-24 bg-black border border-zinc-800 rounded-xl flex flex-col items-center justify-center relative overflow-hidden group cursor-pointer">
+                  @if (faceImage()) {
+                    <img [src]="faceImage()" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <mat-icon class="text-white text-sm">edit</mat-icon>
+                    </div>
+                  } @else {
+                    <mat-icon class="text-zinc-700">add_a_photo</mat-icon>
+                    <span class="text-[7px] text-zinc-600 font-mono uppercase mt-1">UPLOAD FACE</span>
+                  }
+                  <input type="file" (change)="onFaceImageSelected($event)" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                </div>
+                
+                <div class="flex-grow space-y-2">
+                  <div class="space-y-1">
+                    <label class="text-[8px] text-zinc-500 font-mono uppercase">NAME</label>
+                    <input type="text" formControlName="name" placeholder="E.G. RAZIF"
+                      class="w-full bg-black border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-300 focus:border-emerald-500 outline-none transition-all">
+                  </div>
+                  <div class="space-y-1">
+                    <label class="text-[8px] text-zinc-500 font-mono uppercase">DESCRIPTION (OPTIONAL)</label>
+                    <input type="text" formControlName="description" placeholder="E.G. WEARING GLASSES"
+                      class="w-full bg-black border border-zinc-800 rounded-lg p-2 text-[10px] font-mono text-zinc-300 focus:border-emerald-500 outline-none transition-all">
+                  </div>
+                </div>
+              </div>
+              
+              <button type="submit" [disabled]="faceForm.invalid || !faceImage() || isRegisteringFace()"
+                class="w-full py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-mono uppercase hover:bg-emerald-500/20 transition-all disabled:opacity-50">
+                {{ isRegisteringFace() ? 'REGISTERING...' : 'REGISTER FACE' }}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

@@ -29,6 +29,7 @@ export class SettingsComponent {
   config$ = this.configService.config$;
   alertConfig$ = this.alertConfigService.alertConfig$;
   quota$ = this.quotaService.quota$;
+  faces$ = this.configService.faces$;
   
   alertForm = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
@@ -38,6 +39,13 @@ export class SettingsComponent {
 
   connectionQR = signal<string | null>(null);
   isScanning = signal<boolean>(false);
+  faceImage = signal<string | null>(null);
+  isRegisteringFace = signal<boolean>(false);
+
+  faceForm = new FormGroup({
+    name: new FormControl('', [Validators.required]),
+    description: new FormControl('')
+  });
 
   openCalibration = output<void>();
 
@@ -162,5 +170,48 @@ export class SettingsComponent {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
+  }
+
+  onFaceImageSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.faceImage.set(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  async registerFace() {
+    if (this.faceForm.invalid || !this.faceImage()) return;
+    
+    const user = auth.currentUser;
+    if (!user) return;
+
+    this.isRegisteringFace.set(true);
+    try {
+      const faceId = Math.random().toString(36).substring(7);
+      await this.configService.addFace({
+        id: faceId,
+        userId: user.uid,
+        name: this.faceForm.value.name!,
+        description: this.faceForm.value.description || '',
+        imageUrl: this.faceImage()!,
+        registeredAt: Date.now()
+      });
+      
+      this.faceForm.reset();
+      this.faceImage.set(null);
+      console.log('Face registered successfully!');
+    } catch (err) {
+      console.error('Face registration failed:', err);
+    } finally {
+      this.isRegisteringFace.set(false);
+    }
+  }
+
+  async removeFace(faceId: string) {
+    await this.configService.deleteFace(faceId);
   }
 }

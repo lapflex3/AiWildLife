@@ -34,6 +34,7 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
   error = signal<string | null>(null);
   lastDetection = signal<any>(null);
   config = signal<CameraConfig | null>(null);
+  faces = signal<any[]>([]);
   
   private stream: MediaStream | null = null;
   private analysisInterval: any;
@@ -49,6 +50,10 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
           this.stopCamera();
         }
       }
+    });
+
+    this.configService.faces$.subscribe(faces => {
+      this.faces.set(faces);
     });
   }
 
@@ -127,6 +132,11 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  isRecognizedFace(label: string): boolean {
+    if (!label) return false;
+    return this.faces().some(f => f.name.toLowerCase() === label.toLowerCase());
+  }
+
   async analyzeFrame() {
     if (this.isAnalyzing() || !this.quotaService.canUseAI() || !this.isMonitoring()) {
       this.aiStatus.set('Idle');
@@ -163,7 +173,7 @@ export class MonitoringComponent implements AfterViewInit, OnDestroy {
         result = await this.offlineAiService.analyzeFrame(this.canvasElement.nativeElement);
       } else {
         // Use Cloud Gemini API
-        result = await this.geminiService.analyzeCameraFrame(frame, currentTime, currentModelId);
+        result = await this.geminiService.analyzeCameraFrame(frame, currentTime, currentModelId, this.faces());
       }
       
       this.lastDetection.set(result);

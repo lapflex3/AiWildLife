@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { doc, setDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, updateDoc, collection, query, where, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { BehaviorSubject } from 'rxjs';
 import { OperationType, handleFirestoreError } from './quota.service';
@@ -36,6 +36,15 @@ export interface RegisteredDevice {
   token?: string;
 }
 
+export interface RecognizedFace {
+  id: string;
+  userId: string;
+  name: string;
+  imageUrl: string;
+  description?: string;
+  registeredAt: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -43,10 +52,12 @@ export class ConfigService {
   private configSubject = new BehaviorSubject<CameraConfig | null>(null);
   private alertConfigSubject = new BehaviorSubject<AlertConfig | null>(null);
   private devicesSubject = new BehaviorSubject<RegisteredDevice[]>([]);
+  private facesSubject = new BehaviorSubject<RecognizedFace[]>([]);
 
   config$ = this.configSubject.asObservable();
   alertConfig$ = this.alertConfigSubject.asObservable();
   devices$ = this.devicesSubject.asObservable();
+  faces$ = this.facesSubject.asObservable();
 
   constructor() {
     auth.onAuthStateChanged(user => {
@@ -54,10 +65,12 @@ export class ConfigService {
         this.initConfig(user.uid);
         this.initAlertConfig(user.uid);
         this.initDevices(user.uid);
+        this.initFaces(user.uid);
       } else {
         this.configSubject.next(null);
         this.alertConfigSubject.next(null);
         this.devicesSubject.next([]);
+        this.facesSubject.next([]);
       }
     });
   }
@@ -153,6 +166,39 @@ export class ConfigService {
       await setDoc(doc(db, path), device);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+
+  private initFaces(userId: string) {
+    const path = 'recognized_faces';
+    try {
+      const q = query(collection(db, path), where('userId', '==', userId));
+      onSnapshot(q, (snapshot) => {
+        const faces = snapshot.docs.map(doc => doc.data() as RecognizedFace);
+        this.facesSubject.next(faces);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, path);
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+    }
+  }
+
+  async addFace(face: RecognizedFace) {
+    const path = `recognized_faces/${face.id}`;
+    try {
+      await setDoc(doc(db, path), face);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+
+  async deleteFace(faceId: string) {
+    const path = `recognized_faces/${faceId}`;
+    try {
+      await deleteDoc(doc(db, path));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
     }
   }
 

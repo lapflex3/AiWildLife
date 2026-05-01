@@ -41,6 +41,16 @@ service cloud.firestore {
     //   - active: bool (required) - Whether monitoring is currently active.
     //   - modelId: string (required) - The AI model version used for analysis.
     //   - offlineMode: bool (required) - Whether to use local offline AI.
+    //
+    // Collection: recognized_faces
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required) - Unique ID for the face record.
+    //   - userId: string (required) - User ID who owns this record.
+    //   - name: string (required) - Name of the recognized person.
+    //   - imageUrl: string (required) - Base64 reference image of the face.
+    //   - description: string (optional) - Visual description of the person.
+    //   - registeredAt: number (required) - Unix timestamp of registration.
     // ===============================================================
 
     // ===============================================================
@@ -147,6 +157,16 @@ service cloud.firestore {
              data.registeredAt is number &&
              (!('token' in data) || (data.token is string && data.token.size() < 500));
     }
+    
+    function isValidFace(data) {
+      return hasRequiredFields(['id', 'userId', 'name', 'imageUrl', 'registeredAt']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.imageUrl is string && data.imageUrl.size() > 0 && data.imageUrl.size() < 2000000 &&
+             data.registeredAt is number &&
+             (!('description' in data) || (data.description is string && data.description.size() < 500));
+    }
 
     // ===============================================================
     // Rules
@@ -190,6 +210,13 @@ service cloud.firestore {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidDevice(request.resource.data);
       allow update: if isDocOwner() && isValidDevice(request.resource.data) && uidNotModified();
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /recognized_faces/{faceId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidFace(request.resource.data);
+      allow update: if isDocOwner() && isValidFace(request.resource.data) && uidNotModified();
       allow delete: if isDocOwner() || isAdmin();
     }
 

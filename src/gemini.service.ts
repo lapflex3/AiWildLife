@@ -108,7 +108,7 @@ export class GeminiService {
     }
   }
 
-  async analyzeCameraFrame(imageBase64: string, currentTime?: string, modelId: string = 'gemini-3-flash-preview'): Promise<any> {
+  async analyzeCameraFrame(imageBase64: string, currentTime?: string, modelId: string = 'gemini-3-flash-preview', faces: any[] = []): Promise<any> {
     try {
       const imagePart = {
         inlineData: {
@@ -118,6 +118,15 @@ export class GeminiService {
       };
       
       const timeContext = currentTime ? `Waktu sekarang adalah ${currentTime}.` : '';
+      
+      let faceContext = '';
+      if (faces.length > 0) {
+        faceContext = `RECOGNIZED PEOPLE LIST:
+        ${faces.map(f => `- ${f.name}: ${f.description || 'No specific description'}`).join('\n')}
+        
+        If you detect any of these people, set "label" to their exact name and "type" to "human".
+        Provide a personalized greeting for them in the "message".`;
+      }
 
       const response: GenerateContentResponse = await this.ai.models.generateContent({
         model: modelId,
@@ -127,6 +136,8 @@ export class GeminiService {
           Analyze the image and identify if there are any humans or wild animals (elephants, tigers, lions, crocodiles, cheetahs, etc.).
           
           ${timeContext}
+          
+          ${faceContext}
 
           SPECIAL RECOGNITION:
           The admin of this app is Encik Razif. He is a middle-aged man with short dark hair, wearing glasses with rectangular frames.
