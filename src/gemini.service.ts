@@ -108,6 +108,30 @@ export class GeminiService {
     }
   }
 
+  async analyzeDailyEvents(detections: any[], alerts: any[]): Promise<string> {
+    try {
+      const prompt = `Anda adalah seorang Penganalisis Keselamatan AI.
+Sila berikan ringkasan kejadian harian (daily summary) berdasarkan data berikut untuk 'dashboard' keselamatan ladang.
+Pastikan ringkasan ini padat, profesional, dan serlahkan kejadian paling kritikal atau corak yang kerap berlaku (cth: jenis penceroboh atau haiwan liar yang kerap dikesan).
+Sila tulis dalam Bahasa Melayu.
+
+Data Pengesanan (Detections) - Terhad kepada 50 terakhir:
+${JSON.stringify(detections.slice(0, 50), null, 2)}
+
+Data Amaran (Alerts) - Terhad kepada 50 terakhir:
+${JSON.stringify(alerts.slice(0, 50), null, 2)}`;
+
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: prompt,
+      });
+      return response.text;
+    } catch (error) {
+      console.error('Error analyzing daily events:', error);
+      return 'Gagal menjana ringkasan harian. Sila cuba lagi.';
+    }
+  }
+
   async analyzeCameraFrame(imageBase64: string, currentTime?: string, modelId: string = 'gemini-3-flash-preview', faces: any[] = []): Promise<any> {
     try {
       const imagePart = {
